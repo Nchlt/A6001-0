@@ -1,0 +1,36 @@
+ast.cmo :
+ast.cmx :
+parser.cmo : ast.cmo parser.cmi
+parser.cmx : ast.cmx parser.cmi
+typeChecking.cmo : ast.cmo
+typeChecking.cmx : ast.cmx
+untypedAst.cmo : ast.cmo
+untypedAst.cmx : ast.cmx
+typeErasure.cmo : untypedAst.cmo ast.cmo
+typeErasure.cmx : untypedAst.cmx ast.cmx
+gotoAst.cmo : untypedAst.cmo
+gotoAst.cmx : untypedAst.cmx
+destructure.cmo : untypedAst.cmo gotoAst.cmo
+destructure.cmx : untypedAst.cmx gotoAst.cmx
+irAst.cmo : gotoAst.cmo
+irAst.cmx : gotoAst.cmx
+flatten.cmo : irAst.cmo gotoAst.cmo
+flatten.cmx : irAst.cmx gotoAst.cmx
+liveness.cmo : irAst.cmo
+liveness.cmx : irAst.cmx
+dce.cmo : liveness.cmo irAst.cmo
+dce.cmx : liveness.cmx irAst.cmx
+graph.cmo :
+graph.cmx :
+graphColoring.cmo : graph.cmo
+graphColoring.cmx : graph.cmx
+mips.cmo :
+mips.cmx :
+allocation.cmo : mips.cmo liveness.cmo irAst.cmo graphColoring.cmo graph.cmo
+allocation.cmx : mips.cmx liveness.cmx irAst.cmx graphColoring.cmx graph.cmx
+generate.cmo : mips.cmo irAst.cmo allocation.cmo
+generate.cmx : mips.cmx irAst.cmx allocation.cmx
+main.cmo : typeErasure.cmo typeChecking.cmo parser.cmi mips.cmo generate.cmo \
+    flatten.cmo destructure.cmo dce.cmo
+main.cmx : typeErasure.cmx typeChecking.cmx parser.cmx mips.cmx generate.cmx \
+    flatten.cmx destructure.cmx dce.cmx
