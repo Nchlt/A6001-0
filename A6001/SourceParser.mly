@@ -31,32 +31,35 @@
 
 %%
 
-prog:
+/*prog:
 | l=list(fun_decl) {
-    let info = {
+  let rec init_tbl l =
+    match l with
+    | [] -> ()
+    | t :: s ->
+      let id, info = t in
+      Symb_Tbl.add id info
+}*/
+
+prog:
+| EOF { Symb_Tbl.empty }
+| fs=fun_decl; p=prog
+    {
+      let (id, info) = fs in
+      Symb_Tbl.add id info p
+    }
+
+(*
+    {
       return=Some(TypInteger);
       formals=[TypInteger; TypInteger];
       locals=Symb_Tbl.empty;
       code=[]
     } in
 
-    Symb_Tbl.singleton "id" info
+    Symb_Tbl.singleton "id" info*)
 
-  } (* initialisation des Symb_Tbl *)
-
-/*main:
-| MAIN; BEGIN; INT; x=IDENT; END;
-  BEGIN; vds=var_decls; is=instructions; END; EOF  {
-    let infox = { typ=TypInteger; kind=FormalX } in
-    let init  = Symb_Tbl.singleton x infox in
-    let merge_vars _ v1 v2 = match v1, v2 with
-      | _, Some(v) -> Some v
-      | Some(v), _ -> Some v
-      | _, _       -> None
-    in
-    let locals = Symb_Tbl.merge merge_vars init vds in
-    {locals = locals; code=is} }
-;*/
+   (* initialisation des Symb_Tbl *)
 
 var_decls:
 | (* empty *)                      { Symb_Tbl.empty                            }
@@ -130,7 +133,31 @@ parameter:
 
 fun_decl:
 | typ; IDENT; BEGIN; parameters; END; BEGIN; var_decls; instructions; END
-  { }
+  {
+    let merge_vars k v1 v2 =
+        match v1, v2 with
+        |Some v1,_ -> Some v1
+        |None,Some v2 -> Some v2
+        |None,None -> None
+        in
+
+
+      let index = ref 0 in
+      let ftl = List.fold_left (fun acc (t,i) ->
+        incr index; Symb_Tbl.add i {typ=t; kind=Formal(!index)} acc )
+        Symb_Tbl.empty ps in
+
+      let locals = Symb_Tbl.merge merge_vars vds ftl in
+      let locals = Symb_Tbl.add "result" { typ=t; kind=Return } locals in
+      let formals = List.fold_left (fun acc (t,id) -> (t,id)::acc) [] ps in
+      (*On retourne un couple id, infos :*)
+      id, {
+        return=Some t;
+        formals=formals;
+        locals=locals;
+        code=is
+      }
+  }
 | IDENT; BEGIN; parameters; END; BEGIN; var_decls; instructions; END
   { }
 ;

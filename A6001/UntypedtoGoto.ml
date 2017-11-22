@@ -3,14 +3,14 @@
 module S = UntypedAst
 module T = GotoAst
 
+let cpt = ref 0
 let destructure_main p =
 
   (* new_label: unit -> string *)
   (* Un appel [new_label()] crée une nouvelle étiquette qui peut être
      utilisée pour créer des sauts. *)
   let new_label =
-    let cpt = ref 0 in
-    fun () -> incr cpt; Printf.sprintf "_label_main_%i" !cpt
+    fun () -> incr cpt; Printf.sprintf "_label_%i" !cpt
   in
 
   (* destructure_block: S.block -> T.block *)
@@ -53,3 +53,8 @@ let destructure_main p =
 
   { T.locals = p.S.locals; T.code = destructure_block p.S.code;
     T.formals = p.S.formals; T.return = p.S.return }
+
+    let destructure_program p =
+      S.Symb_Tbl.fold (fun i info acc ->
+          T.Symb_Tbl.add i (destructure_func info) acc )
+        p T.Symb_Tbl.empty

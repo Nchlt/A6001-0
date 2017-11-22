@@ -16,8 +16,7 @@ type binop       = SourceAst.binop
 type program = function_info Symb_Tbl.t
 
 and function_info = {
-        return: SourceAst.typ option;
-        formals: SourceAst.typ list;
+        formals: SourceAst.formals;
         locals:  identifier_info Symb_Tbl.t;
         code:    block
       }

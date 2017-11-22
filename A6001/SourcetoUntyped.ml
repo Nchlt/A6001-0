@@ -7,7 +7,21 @@ module T = UntypedAst (* Cible de la transformation  *)
 (* erase_identifier_info: S.identifier_info -> T.identifier_info *)
 let erase_identifier_info i = i.S.kind
 
-let erase_main p =
+(* Aidé par A.Lanco pour le fold_left *)
+let erase_program p =
+  S.Symb_Tbl.fold (
+    fun i info acc -> let locals = S.Symb_Tbl.fold (
+        fun id inf tbl ->
+          T.Symb_Tbl.add id (erase_identifier_info inf) tbl)
+        info.S.locals T.Symb_Tbl.empty in
+
+      let formals = List.fold_left (fun acc (t) -> acc@[t]) [] info.S.formals in
+      T.Symb_Tbl.add i {T.formals = formals;
+                        T.locals = locals;
+                        T.code = info.S.code} acc) p T.Symb_Tbl.empty
+
+
+(* let erase_main p =
   let locals =
     S.Symb_Tbl.fold
       (fun id info tbl ->
@@ -19,4 +33,4 @@ let erase_main p =
     T.code = p.S.code;
     T.return = p.S.return;
     T.formals = p.S.formals
-   }
+   } *)

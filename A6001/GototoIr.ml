@@ -4,7 +4,7 @@ module S = GotoAst
 module T = IrAst
 
 
-let flatten_main p =
+let flatten_function p =
 
   (* On extrait la table des symboles de notre programme, qui sera étendue
      avec les registres virtuels créés à la volée. *)
@@ -34,17 +34,24 @@ let flatten_main p =
 
   (* flatten_instruction: S.instruction -> T.instruction list *)
   and flatten_instruction = function
+    (* Version avec des fold_left à étudier car plus "courte" :*)
+    (* S.ProcCall(c) -> let str,args = c in
+    let (es, vs) = List.fold_left (fun (es_acc, vs_acc) arg ->
+        let (c,v) = flatten_expression arg in (es_acc@c,vs_acc@[v])) ([], []) args in
+    es@[ T.ProcCall(str,vs) ] *)
+
     | S.ProcCall(call) ->
       let str, expr_list = call in
-      let rec constr_value_list l res =
+      let rec get_cel_vel l vel cel =
         match l with
-        | [] -> res
+        | [] -> (cel, vel)
         | t :: s ->
           let ce, ve = flatten_expression t in
-          constr_value_list s (ve@res)
+          get_cel_vel s (ve@vel) (ce@cel)
       in
-        let val_list = constr_value_list expr_list [] in
-        str, val_list
+        let ins, v = get_cel_vel expr_list [] [] in
+        ins @ [ T.ProcCall(str, v) ]
+
 
     | S.Set(Identifier id, e) ->
       let ce, ve = flatten_expression e in
@@ -76,7 +83,13 @@ let flatten_main p =
   *)
   and flatten_expression : S.expression -> T.instruction list * T.value =
     function
-      | FunCall(call) ->
+      (* Aidé par Amine B :*)
+      | FunCall(c) -> let str,args = c in
+        let i = new_tmp() in
+        let (es, vs) = List.fold_left (fun (es_acc, vs_acc) arg ->
+            let (c,v) = flatten_expression arg in (es_acc@c,vs_acc@[v])) ([], []) args in
+        es@[ T.FunCall(i,str,vs) ], T.Identifier(i)
+       (* FunCall(call) ->
         let str, expr_list = call in
         let rec constr_list l ins  =
           match l with
@@ -84,7 +97,7 @@ let flatten_main p =
           | t :: s ->
             let ce, ve = flatten_expression t in
             constr_value_list s (ve@res)
-        in
+        in *)
 
       | Literal(lit) -> [], T.Literal(lit)
       | Location(Identifier id) -> [], T.Identifier(id)
@@ -113,3 +126,6 @@ let flatten_main p =
 
   let flattened_code = flatten_block p.S.code in
   { T.locals = !symb_tbl; T.code = List.map label_instruction flattened_code }
+
+  let flatten_program p =
+    S.Symb_Tbl.fold (fun i info acc -> T.Symb_Tbl.add i (flatten_func info) acc ) p T.Symb_Tbl.empty

@@ -8,13 +8,16 @@ type block       = IrAst.block
 type instruction = IrAst.instruction
 type literal     = IrAst.literal
 type value       = IrAst.value
-    
+
 type alloc_info =
   | Reg   of string
   | Stack of int
 
 type main = {
+  formals: SourceAst.formals;
   locals: alloc_info Symb_Tbl.t;
   offset: int;
   code:   block
 }
+
+and program = function_info Symb_Tbl.t
