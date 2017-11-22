@@ -14,7 +14,7 @@ let flatten_main p =
   let add_symb s =
     symb_tbl := T.Symb_Tbl.add s (Local: T.identifier_info) !symb_tbl;
   in
-  
+
   (* new_tmp: unit -> string *)
   (* Un appel [new_tmp()] crée un nouvel identifiant de registre virtuel
      et l'ajoute à la table des symboles. *)
@@ -31,25 +31,37 @@ let flatten_main p =
   let rec flatten_block = function
     | []   -> []
     | i::b -> flatten_instruction i @ (flatten_block b)
-      
+
   (* flatten_instruction: S.instruction -> T.instruction list *)
   and flatten_instruction = function
+    | S.ProcCall(call) ->
+      let str, expr_list = call in
+      let rec constr_value_list l res =
+        match l with
+        | [] -> res
+        | t :: s ->
+          let ce, ve = flatten_expression t in
+          constr_value_list s (ve@res)
+      in
+        let val_list = constr_value_list expr_list [] in
+        str, val_list
+
     | S.Set(Identifier id, e) ->
       let ce, ve = flatten_expression e in
       ce @ [ T.Value(id, ve) ]
-    
+
     | S.Print(e) ->
       let ce, ve = flatten_expression e in
       ce @ [ T.Print(ve) ]
-	
+
     | S.Label l -> [ T.Label l ]
-    
+
     | S.Goto l  -> [ T.Goto l ]
-    
+
     | S.CondGoto(e, l) ->
       let ce, ve = flatten_expression e in
       ce @ [ T.CondGoto(ve, l) ]
-	
+
     | S.Comment(s) -> [ T.Comment(s) ]
 
   (* flatten_expression: S.expression -> T.instruction list -> T.value *)
@@ -64,6 +76,16 @@ let flatten_main p =
   *)
   and flatten_expression : S.expression -> T.instruction list * T.value =
     function
+      | FunCall(call) ->
+        let str, expr_list = call in
+        let rec constr_list l ins  =
+          match l with
+          | [] -> res
+          | t :: s ->
+            let ce, ve = flatten_expression t in
+            constr_value_list s (ve@res)
+        in
+
       | Literal(lit) -> [], T.Literal(lit)
       | Location(Identifier id) -> [], T.Identifier(id)
       | Binop(op, e1, e2) ->
@@ -91,4 +113,3 @@ let flatten_main p =
 
   let flattened_code = flatten_block p.S.code in
   { T.locals = !symb_tbl; T.code = List.map label_instruction flattened_code }
-  

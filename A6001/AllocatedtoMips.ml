@@ -10,7 +10,7 @@ let generate_main p =
     try  AllocatedAst.Symb_Tbl.find id symb_tbl
     with Not_found -> failwith (Printf.sprintf "Node %s not found" id)
   in
-  
+
   let rec generate_block = function
     | []       -> Nop
     | (l,i)::b -> comment l @@ generate_instr i @@ generate_block b
@@ -46,6 +46,9 @@ let generate_main p =
   and load_second_operand v = load_operand ~$t1 v
 
   and generate_instr : AllocatedAst.instruction -> 'a Mips.asm = function
+    | FunCall(res_id, fun_id, param_list) -> failwith "NYI"
+      (*L'appellant doit réserver ...*)
+    | ProcCall(fun_id, param_list) -> failwith "NYI"
     | Value(dest, v) ->
       (match find_alloc dest with
 	| Reg r   -> load_value r v
@@ -90,7 +93,7 @@ let generate_main p =
   in
 
   let close = li v0 10 @@ syscall in
-  
+
   let built_ins =
     label "atoi"
     @@ move t0 a0
@@ -115,6 +118,6 @@ let generate_main p =
     @@ move v0 t1
     @@ jr   ra
   in
-  
+
   let asm = generate_block p.code in
   { text = init @@ asm @@ close @@ built_ins; data = Nop }

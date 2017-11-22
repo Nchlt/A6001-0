@@ -8,9 +8,9 @@ type location        = UntypedAst.location
 type identifier_info = UntypedAst.identifier_info
 type literal         = UntypedAst.literal
 type binop           = UntypedAst.binop
-    
+
 type label = string
-    
+
 type block = instruction list
 and instruction =
   | Set      of location * expression (* Affectation       *)
@@ -19,9 +19,15 @@ and instruction =
   | Goto     of label                 (* Saut              *)
   | CondGoto of expression * label    (* Saut conditionnel *)
   | Comment  of string                (* Commentaire       *)
-      
-type main = {
-  locals: identifier_info Symb_Tbl.t;
-  code:   block
-}    
+  | ProcCall of call
 
+  and call = string * (expression list)
+
+  type program = function_info Symb_Tbl.t
+
+  and function_info = {
+          return:  SourceAst.typ option;
+          formals: SourceAst.typ list;
+          locals:  identifier_info Symb_Tbl.t;
+          code:    block
+        }
