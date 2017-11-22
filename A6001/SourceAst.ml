@@ -7,8 +7,11 @@ module Symb_Tbl = Map.Make(String)
   locals: identifier_info Symb_Tbl.t;
   code: block;
 } *)
+
+(* Le nouveau type program qui généralise le main *)
 type program = function_info Symb_Tbl.t
 
+(* Chaque function a sa propre table des symboles *)
 and function_info = {
         return:  typ option;
         formals: typ list;
